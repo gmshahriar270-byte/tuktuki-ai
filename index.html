@@ -19,49 +19,72 @@
       box-sizing: border-box;
     }
 
+    html,
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    body {
+      font-family:
+        Arial,
+        "Noto Sans Bengali",
+        sans-serif;
       background: #eef2ff;
     }
 
     .app {
       width: 100%;
-      max-width: 700px;
-      height: 100vh;
+      max-width: 760px;
+      height: 100dvh;
       margin: auto;
-      background: #fff;
+      background: #ffffff;
       display: flex;
       flex-direction: column;
       overflow: hidden;
     }
 
+    /* HEADER */
+
     .header {
-      padding: 14px 16px;
+      flex-shrink: 0;
+      padding: 13px 15px;
       background: #111827;
       color: white;
+
       display: flex;
       align-items: center;
       justify-content: space-between;
-      box-shadow: 0 2px 8px rgba(0,0,0,.15);
+
+      box-shadow:
+        0 2px 12px rgba(0, 0, 0, .18);
     }
 
     .brand {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 11px;
+      min-width: 0;
     }
 
     .logo {
-      width: 40px;
-      height: 40px;
+      width: 42px;
+      height: 42px;
+      flex-shrink: 0;
+
       border-radius: 50%;
+      overflow: hidden;
+
       background: white;
+
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 22px;
-      overflow: hidden;
+
+      box-shadow:
+        0 2px 8px rgba(0, 0, 0, .25);
     }
 
     .logo img {
@@ -70,129 +93,305 @@
       object-fit: cover;
     }
 
+    .brand-info {
+      min-width: 0;
+    }
+
     .brand-text {
       font-size: 18px;
-      font-weight: bold;
+      font-weight: 700;
+      letter-spacing: .2px;
     }
 
     .status {
-      font-size: 11px;
-      opacity: .8;
       margin-top: 3px;
+      font-size: 11px;
+      opacity: .75;
     }
 
     #clearChat {
       border: 0;
-      border-radius: 9px;
-      padding: 8px 10px;
+      outline: 0;
+
+      padding: 8px 11px;
+
+      border-radius: 10px;
+
       background: #dc2626;
       color: white;
+
       font-size: 12px;
+      font-weight: 600;
+
       cursor: pointer;
+
+      transition:
+        transform .15s,
+        opacity .15s;
     }
+
+    #clearChat:active {
+      transform: scale(.95);
+    }
+
+    /* CHAT */
 
     #chat {
       flex: 1;
+
       overflow-y: auto;
-      padding: 18px 14px;
+
+      padding: 20px 14px 14px;
+
       scroll-behavior: smooth;
+
+      background:
+        linear-gradient(
+          180deg,
+          #f8fafc 0%,
+          #eef2f7 100%
+        );
+    }
+
+    #chat::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    #chat::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 20px;
+    }
+
+    .message-row {
+      display: flex;
+      width: 100%;
+      margin: 10px 0;
+    }
+
+    .message-row.user-row {
+      justify-content: flex-end;
+    }
+
+    .message-row.ai-row {
+      justify-content: flex-start;
     }
 
     .message {
-      max-width: 85%;
-      margin: 9px 0;
+      max-width: 82%;
+
       padding: 11px 14px;
-      border-radius: 16px;
-      line-height: 1.55;
+
+      border-radius: 18px;
+
+      line-height: 1.6;
+
       white-space: pre-wrap;
-      word-wrap: break-word;
+      word-break: break-word;
+
       font-size: 15px;
-      box-shadow: 0 1px 3px rgba(0,0,0,.08);
+
+      box-shadow:
+        0 2px 7px rgba(0, 0, 0, .07);
+
+      animation:
+        messageIn .18s ease;
+    }
+
+    @keyframes messageIn {
+      from {
+        opacity: 0;
+        transform: translateY(5px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .user {
-      margin-left: auto;
-      background: #dbeafe;
+      background: #111827;
+      color: white;
+
       border-bottom-right-radius: 5px;
     }
 
     .ai {
-      margin-right: auto;
-      background: #f1f5f9;
+      background: white;
+      color: #111827;
+
+      border: 1px solid #e5e7eb;
+
       border-bottom-left-radius: 5px;
     }
 
     .typing {
+      color: #64748b;
       font-style: italic;
-      opacity: .7;
     }
 
+    .typing::after {
+      content: "...";
+      animation: dots 1.2s infinite;
+    }
+
+    @keyframes dots {
+      0% {
+        opacity: .2;
+      }
+
+      50% {
+        opacity: 1;
+      }
+
+      100% {
+        opacity: .2;
+      }
+    }
+
+    /* INPUT */
+
     .input-area {
+      flex-shrink: 0;
+
       display: flex;
+      align-items: center;
+
       gap: 8px;
-      padding: 10px;
+
+      padding:
+        10px
+        10px
+        calc(10px + env(safe-area-inset-bottom));
+
       background: white;
-      border-top: 1px solid #e5e7eb;
+
+      border-top:
+        1px solid #e5e7eb;
     }
 
     #message {
       flex: 1;
       min-width: 0;
-      padding: 12px 14px;
-      border: 1px solid #d1d5db;
-      border-radius: 12px;
+
+      height: 46px;
+
+      padding:
+        0 15px;
+
+      border:
+        1px solid #d1d5db;
+
+      border-radius: 15px;
+
       outline: none;
+
+      background: #f8fafc;
+
+      color: #111827;
+
       font-size: 16px;
+
+      transition:
+        border-color .2s,
+        background .2s,
+        box-shadow .2s;
     }
 
     #message:focus {
-      border-color: #6b7280;
+      border-color: #64748b;
+
+      background: white;
+
+      box-shadow:
+        0 0 0 3px
+        rgba(100, 116, 139, .12);
     }
 
     #send {
+      width: 48px;
+      height: 46px;
+
+      flex-shrink: 0;
+
       border: 0;
-      border-radius: 12px;
-      padding: 0 18px;
+
+      border-radius: 15px;
+
       background: #111827;
       color: white;
-      font-size: 15px;
+
+      font-size: 20px;
+
       cursor: pointer;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      transition:
+        transform .15s,
+        background .15s;
     }
 
-    button:disabled {
-      opacity: .5;
+    #send:active {
+      transform: scale(.93);
     }
+
+    #send:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+    }
+
+    /* MOBILE */
 
     @media (max-width: 480px) {
+
       .header {
-        padding: 11px;
+        padding: 10px 11px;
+      }
+
+      .logo {
+        width: 38px;
+        height: 38px;
       }
 
       .brand-text {
         font-size: 16px;
       }
 
-      .logo {
-        width: 36px;
-        height: 36px;
-        font-size: 20px;
+      .status {
+        font-size: 10px;
       }
 
       #clearChat {
-        padding: 7px 8px;
+        padding: 7px 9px;
         font-size: 11px;
       }
 
       #chat {
-        padding: 14px 10px;
+        padding:
+          15px 9px 12px;
       }
 
       .message {
         max-width: 90%;
+        font-size: 15px;
+        padding: 10px 13px;
+      }
+
+      .input-area {
+        padding: 8px;
+      }
+
+      #message {
+        height: 45px;
+        font-size: 16px;
       }
 
       #send {
-        padding: 0 14px;
+        width: 46px;
+        height: 45px;
       }
     }
   </style>
@@ -201,6 +400,8 @@
 <body>
 
 <div class="app">
+
+  <!-- HEADER -->
 
   <div class="header">
 
@@ -213,7 +414,8 @@
         >
       </div>
 
-      <div>
+      <div class="brand-info">
+
         <div class="brand-text">
           Tuktuki AI
         </div>
@@ -221,6 +423,7 @@
         <div class="status">
           ● Online
         </div>
+
       </div>
 
     </div>
@@ -231,26 +434,37 @@
 
   </div>
 
+
+  <!-- CHAT -->
+
   <div id="chat"></div>
+
+
+  <!-- INPUT -->
 
   <div class="input-area">
 
     <input
       id="message"
       type="text"
-      placeholder="এখানে লিখুন..."
+      placeholder="Tuktuki AI-কে কিছু জিজ্ঞেস করুন..."
       autocomplete="off"
     >
 
-    <button id="send">
-      Send
+    <button
+      id="send"
+      aria-label="Send"
+    >
+      ➤
     </button>
 
   </div>
 
 </div>
 
+
 <script>
+
   const chat =
     document.getElementById("chat");
 
@@ -262,6 +476,11 @@
 
   const clearButton =
     document.getElementById("clearChat");
+
+
+  /* =========================
+     MEMORY
+  ========================= */
 
   let history = [];
 
@@ -283,6 +502,7 @@
 
   }
 
+
   function saveHistory() {
 
     localStorage.setItem(
@@ -292,11 +512,26 @@
 
   }
 
+
+  /* =========================
+     ADD MESSAGE
+  ========================= */
+
   function addMessage(
     text,
     type,
     extraClass = ""
   ) {
+
+    const row =
+      document.createElement("div");
+
+    row.className =
+      "message-row " +
+      (type === "user"
+        ? "user-row"
+        : "ai-row");
+
 
     const div =
       document.createElement("div");
@@ -309,27 +544,41 @@
 
     div.textContent = text;
 
-    chat.appendChild(div);
+
+    row.appendChild(div);
+
+    chat.appendChild(row);
+
 
     chat.scrollTop =
       chat.scrollHeight;
 
-    return div;
+
+    return row;
+
   }
+
+
+  /* =========================
+     LOAD CHAT
+  ========================= */
 
   function loadChat() {
 
     chat.innerHTML = "";
 
+
     if (history.length === 0) {
 
       addMessage(
-        "হ্যালো 👋 আমি Tuktuki AI।\nআমার সাথে চ্যাট করো!",
+        "হ্যালো 👋\nআমি Tuktuki AI।\nআমার সাথে চ্যাট করো!",
         "ai"
       );
 
       return;
+
     }
+
 
     history.forEach(item => {
 
@@ -351,6 +600,11 @@
 
   }
 
+
+  /* =========================
+     CLEAR CHAT
+  ========================= */
+
   clearButton.addEventListener(
     "click",
     () => {
@@ -360,45 +614,62 @@
           "এই ডিভাইসের চ্যাট হিস্ট্রি মুছে ফেলতে চাও?"
         );
 
+
       if (!confirmClear) {
         return;
       }
 
+
       history = [];
+
 
       localStorage.removeItem(
         "tuktuki_history"
       );
+
 
       loadChat();
 
     }
   );
 
+
+  /* =========================
+     SEND MESSAGE
+  ========================= */
+
   async function sendMessage() {
 
     const message =
       input.value.trim();
 
+
     if (!message) {
       return;
     }
+
 
     addMessage(
       message,
       "user"
     );
 
+
     input.value = "";
+
 
     sendButton.disabled = true;
 
+    input.disabled = true;
+
+
     const typing =
       addMessage(
-        "Tuktuki AI লিখছে...",
+        "Tuktuki AI লিখছে",
         "ai",
         "typing"
       );
+
 
     try {
 
@@ -420,6 +691,7 @@
           }
         );
 
+
       if (!response.ok) {
 
         throw new Error(
@@ -429,29 +701,36 @@
 
       }
 
+
       const data =
         await response.json();
 
+
       typing.remove();
+
 
       const reply =
         data.reply ||
         "দুঃখিত, কোনো উত্তর পাওয়া যায়নি।";
+
 
       addMessage(
         reply,
         "ai"
       );
 
+
       history.push({
         role: "user",
         content: message
       });
 
+
       history.push({
         role: "assistant",
         content: reply
       });
+
 
       saveHistory();
 
@@ -459,41 +738,72 @@
 
       typing.remove();
 
+
       addMessage(
-        "দুঃখিত, সংযোগে সমস্যা হয়েছে।",
+        "দুঃখিত 😥 সংযোগে সমস্যা হয়েছে। আবার চেষ্টা করো।",
         "ai"
       );
+
 
       console.error(error);
 
     }
 
+
     sendButton.disabled = false;
+
+    input.disabled = false;
 
     input.focus();
 
   }
+
+
+  /* =========================
+     BUTTON
+  ========================= */
 
   sendButton.addEventListener(
     "click",
     sendMessage
   );
 
+
+  /* =========================
+     ENTER
+  ========================= */
+
   input.addEventListener(
     "keydown",
     event => {
 
-      if (event.key === "Enter") {
+      if (
+        event.key === "Enter" &&
+        !sendButton.disabled
+      ) {
+
         sendMessage();
+
       }
 
     }
   );
 
+
+  /* =========================
+     START
+  ========================= */
+
   loadChat();
 
-  // PWA Service Worker
-  if ("serviceWorker" in navigator) {
+
+  /* =========================
+     PWA SERVICE WORKER
+  ========================= */
+
+  if (
+    "serviceWorker" in navigator
+  ) {
 
     window.addEventListener(
       "load",
@@ -514,6 +824,7 @@
     );
 
   }
+
 </script>
 
 </body>

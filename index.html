@@ -27,12 +27,24 @@
     }
 
     .header {
-      padding: 16px;
+      padding: 12px 15px;
       background: #111827;
       color: white;
-      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       font-size: 20px;
       font-weight: bold;
+    }
+
+    #clearChat {
+      border: 0;
+      border-radius: 8px;
+      padding: 8px 10px;
+      background: #dc2626;
+      color: white;
+      font-size: 13px;
+      cursor: pointer;
     }
 
     #chat {
@@ -48,6 +60,7 @@
       border-radius: 14px;
       line-height: 1.5;
       white-space: pre-wrap;
+      word-wrap: break-word;
     }
 
     .user {
@@ -76,13 +89,14 @@
       font-size: 16px;
     }
 
-    button {
+    #send {
       border: 0;
       border-radius: 10px;
       padding: 0 18px;
       background: #111827;
       color: white;
       font-size: 15px;
+      cursor: pointer;
     }
 
     button:disabled {
@@ -96,7 +110,8 @@
 <div class="app">
 
   <div class="header">
-    🤖 Tuktuki AI
+    <span>🤖 Tuktuki AI</span>
+    <button id="clearChat">🗑️ Clear Chat</button>
   </div>
 
   <div id="chat"></div>
@@ -117,6 +132,7 @@
   const chat = document.getElementById("chat");
   const input = document.getElementById("message");
   const sendButton = document.getElementById("send");
+  const clearButton = document.getElementById("clearChat");
 
   let history = [];
 
@@ -175,6 +191,21 @@
     });
   }
 
+  clearButton.addEventListener("click", () => {
+    const confirmClear = confirm(
+      "তুমি কি এই ডিভাইসের চ্যাট হিস্ট্রি মুছে ফেলতে চাও?"
+    );
+
+    if (!confirmClear) {
+      return;
+    }
+
+    history = [];
+    localStorage.removeItem("tuktuki_history");
+
+    loadChat();
+  });
+
   async function sendMessage() {
     const message = input.value.trim();
 
@@ -204,7 +235,9 @@
       });
 
       if (!response.ok) {
-        throw new Error("Server error: " + response.status);
+        throw new Error(
+          "Server error: " + response.status
+        );
       }
 
       const data = await response.json();

@@ -253,9 +253,7 @@
     .ai {
       background: white;
       color: #111827;
-
       border: 1px solid #e5e7eb;
-
       border-bottom-left-radius: 5px;
     }
 
@@ -301,7 +299,7 @@
       display: flex;
       align-items: center;
 
-      gap: 8px;
+      gap: 7px;
 
       padding: 10px;
 
@@ -325,7 +323,7 @@
 
       height: 46px;
 
-      padding: 0 15px;
+      padding: 0 14px;
 
       border: 1px solid #d1d5db;
 
@@ -348,7 +346,6 @@
 
     #message:focus {
       border-color: #64748b;
-
       background: white;
 
       box-shadow:
@@ -370,6 +367,65 @@
       color: #94a3b8;
     }
 
+    /* VOICE BUTTON */
+
+    #voiceButton {
+      width: 46px;
+      height: 46px;
+
+      flex-shrink: 0;
+
+      border: 0;
+      border-radius: 15px;
+
+      background: #e2e8f0;
+      color: #111827;
+
+      font-size: 20px;
+
+      cursor: pointer;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      transition:
+        transform .15s,
+        background .2s;
+    }
+
+    #voiceButton:active {
+      transform: scale(.93);
+    }
+
+    body.dark #voiceButton {
+      background: #334155;
+      color: white;
+    }
+
+    #voiceButton.listening {
+      background: #dc2626;
+      color: white;
+
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(220, 38, 38, .5);
+      }
+
+      70% {
+        box-shadow: 0 0 0 9px rgba(220, 38, 38, 0);
+      }
+
+      100% {
+        box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
+      }
+    }
+
+    /* SEND */
+
     #send {
       width: 48px;
       height: 46px;
@@ -377,7 +433,6 @@
       flex-shrink: 0;
 
       border: 0;
-
       border-radius: 15px;
 
       background: #111827;
@@ -391,7 +446,9 @@
       align-items: center;
       justify-content: center;
 
-      transition: transform .15s, background .15s;
+      transition:
+        transform .15s,
+        background .15s;
     }
 
     body.dark #send {
@@ -454,11 +511,17 @@
 
       .input-area {
         padding: 8px;
+        gap: 5px;
       }
 
       #message {
         height: 45px;
         font-size: 16px;
+      }
+
+      #voiceButton {
+        width: 44px;
+        height: 45px;
       }
 
       #send {
@@ -535,6 +598,14 @@
     >
 
     <button
+      id="voiceButton"
+      aria-label="Voice Input"
+      title="কথা বলে লিখুন"
+    >
+      🎤
+    </button>
+
+    <button
       id="send"
       aria-label="Send"
     >
@@ -563,9 +634,12 @@
   const themeToggle =
     document.getElementById("themeToggle");
 
+  const voiceButton =
+    document.getElementById("voiceButton");
+
 
   /* =========================
-     THEME
+     DARK / LIGHT MODE
   ========================= */
 
   const savedTheme =
@@ -764,6 +838,140 @@
 
 
   /* =========================
+     VOICE INPUT
+  ========================= */
+
+  const SpeechRecognition =
+    window.SpeechRecognition ||
+    window.webkitSpeechRecognition;
+
+  let recognition = null;
+
+  let isListening = false;
+
+
+  if (SpeechRecognition) {
+
+    recognition =
+      new SpeechRecognition();
+
+    recognition.lang = "bn-BD";
+
+    recognition.continuous = false;
+
+    recognition.interimResults = true;
+
+
+    recognition.onstart = () => {
+
+      isListening = true;
+
+      voiceButton.classList.add(
+        "listening"
+      );
+
+      voiceButton.textContent = "🔴";
+
+    };
+
+
+    recognition.onresult =
+      event => {
+
+        let finalText = "";
+
+        for (
+          let i = event.resultIndex;
+          i < event.results.length;
+          i++
+        ) {
+
+          finalText +=
+            event.results[i][0].transcript;
+
+        }
+
+        input.value = finalText;
+
+      };
+
+
+    recognition.onerror =
+      event => {
+
+        console.log(
+          "Voice recognition:",
+          event.error
+        );
+
+        isListening = false;
+
+        voiceButton.classList.remove(
+          "listening"
+        );
+
+        voiceButton.textContent = "🎤";
+
+      };
+
+
+    recognition.onend = () => {
+
+      isListening = false;
+
+      voiceButton.classList.remove(
+        "listening"
+      );
+
+      voiceButton.textContent = "🎤";
+
+      input.focus();
+
+    };
+
+
+    voiceButton.addEventListener(
+      "click",
+      () => {
+
+        if (isListening) {
+
+          recognition.stop();
+
+          return;
+
+        }
+
+        try {
+
+          recognition.start();
+
+        } catch (error) {
+
+          console.log(error);
+
+        }
+
+      }
+    );
+
+  } else {
+
+    voiceButton.addEventListener(
+      "click",
+      () => {
+
+        alert(
+          "এই ব্রাউজারে Voice Input সমর্থিত নয়। Chrome ব্যবহার করে চেষ্টা করো।"
+        );
+
+      }
+    );
+
+  }
+
+
+  /* =========================
      SEND MESSAGE
   ========================= */
 
@@ -775,6 +983,13 @@
 
     if (!message) {
       return;
+    }
+
+
+    if (isListening && recognition) {
+
+      recognition.stop();
+
     }
 
 
@@ -790,6 +1005,8 @@
     sendButton.disabled = true;
 
     input.disabled = true;
+
+    voiceButton.disabled = true;
 
 
     const typing =
@@ -882,6 +1099,8 @@
     sendButton.disabled = false;
 
     input.disabled = false;
+
+    voiceButton.disabled = false;
 
     input.focus();
 

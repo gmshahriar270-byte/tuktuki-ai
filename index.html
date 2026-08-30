@@ -3,7 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Tuktuki AI</title>
+
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/icon-192.png" type="image/png">
+
+  <meta name="theme-color" content="#111827">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Tuktuki AI">
 
   <style>
     * {
@@ -21,7 +30,7 @@
       max-width: 700px;
       height: 100vh;
       margin: auto;
-      background: #ffffff;
+      background: #fff;
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -34,7 +43,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      box-shadow: 0 2px 8px rgba(0,0,0,.15);
     }
 
     .brand {
@@ -47,11 +56,18 @@
       width: 40px;
       height: 40px;
       border-radius: 50%;
-      background: #ffffff;
+      background: white;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 22px;
+      overflow: hidden;
+    }
+
+    .logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
 
     .brand-text {
@@ -61,8 +77,7 @@
 
     .status {
       font-size: 11px;
-      opacity: 0.8;
-      font-weight: normal;
+      opacity: .8;
       margin-top: 3px;
     }
 
@@ -92,7 +107,7 @@
       white-space: pre-wrap;
       word-wrap: break-word;
       font-size: 15px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      box-shadow: 0 1px 3px rgba(0,0,0,.08);
     }
 
     .user {
@@ -109,14 +124,14 @@
 
     .typing {
       font-style: italic;
-      opacity: 0.7;
+      opacity: .7;
     }
 
     .input-area {
       display: flex;
       gap: 8px;
       padding: 10px;
-      background: #ffffff;
+      background: white;
       border-top: 1px solid #e5e7eb;
     }
 
@@ -145,7 +160,7 @@
     }
 
     button:disabled {
-      opacity: 0.5;
+      opacity: .5;
     }
 
     @media (max-width: 480px) {
@@ -174,7 +189,6 @@
 
       .message {
         max-width: 90%;
-        font-size: 15px;
       }
 
       #send {
@@ -189,21 +203,38 @@
 <div class="app">
 
   <div class="header">
+
     <div class="brand">
-      <div class="logo">🤖</div>
+
+      <div class="logo">
+        <img
+          src="/icon-192.png"
+          alt="Tuktuki AI"
+        >
+      </div>
 
       <div>
-        <div class="brand-text">Tuktuki AI</div>
-        <div class="status">● Online</div>
+        <div class="brand-text">
+          Tuktuki AI
+        </div>
+
+        <div class="status">
+          ● Online
+        </div>
       </div>
+
     </div>
 
-    <button id="clearChat">🗑️ Clear</button>
+    <button id="clearChat">
+      🗑️ Clear
+    </button>
+
   </div>
 
   <div id="chat"></div>
 
   <div class="input-area">
+
     <input
       id="message"
       type="text"
@@ -211,130 +242,195 @@
       autocomplete="off"
     >
 
-    <button id="send">Send</button>
+    <button id="send">
+      Send
+    </button>
+
   </div>
 
 </div>
 
 <script>
-  const chat = document.getElementById("chat");
-  const input = document.getElementById("message");
-  const sendButton = document.getElementById("send");
-  const clearButton = document.getElementById("clearChat");
+  const chat =
+    document.getElementById("chat");
+
+  const input =
+    document.getElementById("message");
+
+  const sendButton =
+    document.getElementById("send");
+
+  const clearButton =
+    document.getElementById("clearChat");
 
   let history = [];
 
   try {
+
     history = JSON.parse(
-      localStorage.getItem("tuktuki_history") || "[]"
+      localStorage.getItem(
+        "tuktuki_history"
+      ) || "[]"
     );
 
     if (!Array.isArray(history)) {
       history = [];
     }
+
   } catch {
+
     history = [];
+
   }
 
   function saveHistory() {
+
     localStorage.setItem(
       "tuktuki_history",
       JSON.stringify(history)
     );
+
   }
 
-  function addMessage(text, type, extraClass = "") {
-    const div = document.createElement("div");
+  function addMessage(
+    text,
+    type,
+    extraClass = ""
+  ) {
+
+    const div =
+      document.createElement("div");
 
     div.className =
-      "message " + type + " " + extraClass;
+      "message " +
+      type +
+      " " +
+      extraClass;
 
     div.textContent = text;
 
     chat.appendChild(div);
-    chat.scrollTop = chat.scrollHeight;
+
+    chat.scrollTop =
+      chat.scrollHeight;
 
     return div;
   }
 
   function loadChat() {
+
     chat.innerHTML = "";
 
     if (history.length === 0) {
+
       addMessage(
         "হ্যালো 👋 আমি Tuktuki AI।\nআমার সাথে চ্যাট করো!",
         "ai"
       );
+
       return;
     }
 
     history.forEach(item => {
+
       if (
         item.role === "user" ||
         item.role === "assistant"
       ) {
+
         addMessage(
           item.content,
-          item.role === "user" ? "user" : "ai"
+          item.role === "user"
+            ? "user"
+            : "ai"
         );
+
       }
+
     });
+
   }
 
-  clearButton.addEventListener("click", () => {
-    const confirmClear = confirm(
-      "এই ডিভাইসের চ্যাট হিস্ট্রি মুছে ফেলতে চাও?"
-    );
+  clearButton.addEventListener(
+    "click",
+    () => {
 
-    if (!confirmClear) {
-      return;
+      const confirmClear =
+        confirm(
+          "এই ডিভাইসের চ্যাট হিস্ট্রি মুছে ফেলতে চাও?"
+        );
+
+      if (!confirmClear) {
+        return;
+      }
+
+      history = [];
+
+      localStorage.removeItem(
+        "tuktuki_history"
+      );
+
+      loadChat();
+
     }
-
-    history = [];
-    localStorage.removeItem("tuktuki_history");
-
-    loadChat();
-  });
+  );
 
   async function sendMessage() {
-    const message = input.value.trim();
+
+    const message =
+      input.value.trim();
 
     if (!message) {
       return;
     }
 
-    addMessage(message, "user");
-
-    input.value = "";
-    sendButton.disabled = true;
-
-    const typing = addMessage(
-      "Tuktuki AI লিখছে...",
-      "ai",
-      "typing"
+    addMessage(
+      message,
+      "user"
     );
 
+    input.value = "";
+
+    sendButton.disabled = true;
+
+    const typing =
+      addMessage(
+        "Tuktuki AI লিখছে...",
+        "ai",
+        "typing"
+      );
+
     try {
-      const response = await fetch("/api/chat", {
-        method: "POST",
 
-        headers: {
-          "Content-Type": "application/json"
-        },
+      const response =
+        await fetch(
+          "/api/chat",
+          {
+            method: "POST",
 
-        body: JSON.stringify({
-          message: message,
-          history: history
-        })
-      });
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+
+            body: JSON.stringify({
+              message: message,
+              history: history
+            })
+          }
+        );
 
       if (!response.ok) {
+
         throw new Error(
-          "Server error: " + response.status
+          "Server error: " +
+          response.status
         );
+
       }
 
-      const data = await response.json();
+      const data =
+        await response.json();
 
       typing.remove();
 
@@ -342,7 +438,10 @@
         data.reply ||
         "দুঃখিত, কোনো উত্তর পাওয়া যায়নি।";
 
-      addMessage(reply, "ai");
+      addMessage(
+        reply,
+        "ai"
+      );
 
       history.push({
         role: "user",
@@ -357,6 +456,7 @@
       saveHistory();
 
     } catch (error) {
+
       typing.remove();
 
       addMessage(
@@ -365,10 +465,13 @@
       );
 
       console.error(error);
+
     }
 
     sendButton.disabled = false;
+
     input.focus();
+
   }
 
   sendButton.addEventListener(
@@ -379,13 +482,38 @@
   input.addEventListener(
     "keydown",
     event => {
+
       if (event.key === "Enter") {
         sendMessage();
       }
+
     }
   );
 
   loadChat();
+
+  // PWA Service Worker
+  if ("serviceWorker" in navigator) {
+
+    window.addEventListener(
+      "load",
+      () => {
+
+        navigator.serviceWorker
+          .register("/sw.js")
+          .catch(error => {
+
+            console.log(
+              "Service Worker:",
+              error
+            );
+
+          });
+
+      }
+    );
+
+  }
 </script>
 
 </body>

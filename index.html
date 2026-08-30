@@ -13,7 +13,7 @@
     body {
       margin: 0;
       font-family: Arial, sans-serif;
-      background: #f3f4f6;
+      background: #eef2ff;
     }
 
     .app {
@@ -21,77 +21,122 @@
       max-width: 700px;
       height: 100vh;
       margin: auto;
-      background: white;
+      background: #ffffff;
       display: flex;
       flex-direction: column;
+      overflow: hidden;
     }
 
     .header {
-      padding: 12px 15px;
+      padding: 14px 16px;
       background: #111827;
       color: white;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      font-size: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+
+    .brand-text {
+      font-size: 18px;
       font-weight: bold;
+    }
+
+    .status {
+      font-size: 11px;
+      opacity: 0.8;
+      font-weight: normal;
+      margin-top: 3px;
     }
 
     #clearChat {
       border: 0;
-      border-radius: 8px;
+      border-radius: 9px;
       padding: 8px 10px;
       background: #dc2626;
       color: white;
-      font-size: 13px;
+      font-size: 12px;
       cursor: pointer;
     }
 
     #chat {
       flex: 1;
       overflow-y: auto;
-      padding: 15px;
+      padding: 18px 14px;
+      scroll-behavior: smooth;
     }
 
     .message {
       max-width: 85%;
-      margin: 10px 0;
-      padding: 12px 15px;
-      border-radius: 14px;
-      line-height: 1.5;
+      margin: 9px 0;
+      padding: 11px 14px;
+      border-radius: 16px;
+      line-height: 1.55;
       white-space: pre-wrap;
       word-wrap: break-word;
+      font-size: 15px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
     }
 
     .user {
       margin-left: auto;
       background: #dbeafe;
+      border-bottom-right-radius: 5px;
     }
 
     .ai {
       margin-right: auto;
-      background: #eeeeee;
+      background: #f1f5f9;
+      border-bottom-left-radius: 5px;
+    }
+
+    .typing {
+      font-style: italic;
+      opacity: 0.7;
     }
 
     .input-area {
       display: flex;
       gap: 8px;
       padding: 10px;
-      border-top: 1px solid #ddd;
+      background: #ffffff;
+      border-top: 1px solid #e5e7eb;
     }
 
     #message {
       flex: 1;
-      padding: 12px;
-      border: 1px solid #ccc;
-      border-radius: 10px;
+      min-width: 0;
+      padding: 12px 14px;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
       outline: none;
       font-size: 16px;
     }
 
+    #message:focus {
+      border-color: #6b7280;
+    }
+
     #send {
       border: 0;
-      border-radius: 10px;
+      border-radius: 12px;
       padding: 0 18px;
       background: #111827;
       color: white;
@@ -102,6 +147,40 @@
     button:disabled {
       opacity: 0.5;
     }
+
+    @media (max-width: 480px) {
+      .header {
+        padding: 11px;
+      }
+
+      .brand-text {
+        font-size: 16px;
+      }
+
+      .logo {
+        width: 36px;
+        height: 36px;
+        font-size: 20px;
+      }
+
+      #clearChat {
+        padding: 7px 8px;
+        font-size: 11px;
+      }
+
+      #chat {
+        padding: 14px 10px;
+      }
+
+      .message {
+        max-width: 90%;
+        font-size: 15px;
+      }
+
+      #send {
+        padding: 0 14px;
+      }
+    }
   </style>
 </head>
 
@@ -110,8 +189,16 @@
 <div class="app">
 
   <div class="header">
-    <span>🤖 Tuktuki AI</span>
-    <button id="clearChat">🗑️ Clear Chat</button>
+    <div class="brand">
+      <div class="logo">🤖</div>
+
+      <div>
+        <div class="brand-text">Tuktuki AI</div>
+        <div class="status">● Online</div>
+      </div>
+    </div>
+
+    <button id="clearChat">🗑️ Clear</button>
   </div>
 
   <div id="chat"></div>
@@ -123,6 +210,7 @@
       placeholder="এখানে লিখুন..."
       autocomplete="off"
     >
+
     <button id="send">Send</button>
   </div>
 
@@ -155,10 +243,12 @@
     );
   }
 
-  function addMessage(text, type) {
+  function addMessage(text, type, extraClass = "") {
     const div = document.createElement("div");
 
-    div.className = "message " + type;
+    div.className =
+      "message " + type + " " + extraClass;
+
     div.textContent = text;
 
     chat.appendChild(div);
@@ -172,7 +262,7 @@
 
     if (history.length === 0) {
       addMessage(
-        "হ্যালো 👋 আমি Tuktuki AI। আমার সাথে চ্যাট করো!",
+        "হ্যালো 👋 আমি Tuktuki AI।\nআমার সাথে চ্যাট করো!",
         "ai"
       );
       return;
@@ -193,7 +283,7 @@
 
   clearButton.addEventListener("click", () => {
     const confirmClear = confirm(
-      "তুমি কি এই ডিভাইসের চ্যাট হিস্ট্রি মুছে ফেলতে চাও?"
+      "এই ডিভাইসের চ্যাট হিস্ট্রি মুছে ফেলতে চাও?"
     );
 
     if (!confirmClear) {
@@ -214,20 +304,24 @@
     }
 
     addMessage(message, "user");
+
     input.value = "";
     sendButton.disabled = true;
 
     const typing = addMessage(
       "Tuktuki AI লিখছে...",
-      "ai"
+      "ai",
+      "typing"
     );
 
     try {
       const response = await fetch("/api/chat", {
         method: "POST",
+
         headers: {
           "Content-Type": "application/json"
         },
+
         body: JSON.stringify({
           message: message,
           history: history

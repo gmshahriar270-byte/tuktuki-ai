@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="bn">
+
 <head>
+
   <meta charset="UTF-8">
 
   <meta
@@ -45,11 +47,14 @@
     rel="stylesheet"
     href="/style.css"
   >
+
 </head>
+
 
 <body>
 
   <div class="app">
+
 
     <!-- HEADER -->
 
@@ -58,11 +63,14 @@
       <div class="brand">
 
         <div class="logo">
+
           <img
             src="/icon-192.png"
             alt="Tuktuki AI"
           >
+
         </div>
+
 
         <div class="brand-info">
 
@@ -78,15 +86,16 @@
 
       </div>
 
+
       <div class="header-buttons">
 
         <button
           id="themeToggle"
           type="button"
-          aria-label="Theme"
         >
           🌙
         </button>
+
 
         <button
           id="clearChat"
@@ -100,14 +109,68 @@
     </header>
 
 
+
     <!-- CHAT -->
 
     <main id="chat"></main>
 
 
-    <!-- INPUT -->
+
+    <!-- IMAGE PREVIEW -->
+
+    <div
+      id="imagePreviewArea"
+      style="display:none;"
+    >
+
+      <div class="image-preview-box">
+
+        <img
+          id="imagePreview"
+          src=""
+          alt="Selected image"
+        >
+
+        <button
+          id="removeImage"
+          type="button"
+        >
+          ✕
+        </button>
+
+      </div>
+
+    </div>
+
+
+
+    <!-- INPUT AREA -->
 
     <div class="input-area">
+
+
+      <!-- IMAGE BUTTON -->
+
+      <button
+        id="imageButton"
+        type="button"
+        aria-label="ছবি নির্বাচন"
+      >
+        📷
+      </button>
+
+
+      <!-- HIDDEN FILE INPUT -->
+
+      <input
+        id="imageInput"
+        type="file"
+        accept="image/*"
+        hidden
+      >
+
+
+      <!-- MESSAGE -->
 
       <input
         id="message"
@@ -116,6 +179,9 @@
         autocomplete="off"
       >
 
+
+      <!-- VOICE -->
+
       <button
         id="voiceButton"
         type="button"
@@ -123,6 +189,9 @@
       >
         🎤
       </button>
+
+
+      <!-- SEND -->
 
       <button
         id="send"
@@ -137,9 +206,11 @@
   </div>
 
 
-  <!-- APP JAVASCRIPT -->
+
+  <!-- APP JS -->
 
   <script src="/app.js"></script>
+
 
 
   <!-- SERVICE WORKER -->
@@ -155,15 +226,19 @@
           navigator.serviceWorker
             .register("/sw.js")
             .then(() => {
+
               console.log(
                 "Tuktuki AI Service Worker চালু হয়েছে"
               );
+
             })
             .catch(error => {
+
               console.log(
                 "Service Worker Error:",
                 error
               );
+
             });
 
         }
@@ -173,5 +248,7 @@
 
   </script>
 
+
 </body>
+
 </html>

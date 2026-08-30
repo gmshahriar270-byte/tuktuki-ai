@@ -57,8 +57,22 @@ function saveMemory() {
   }
 }
 
-app.use(express.json());
+/*
+  JSON body একটু বড় করা হলো,
+  যাতে ছবি Base64 হিসেবে পাঠানো যায়।
+*/
+app.use(
+  express.json({
+    limit: "10mb"
+  })
+);
+
 app.use(express.static(__dirname));
+
+
+/* =========================
+   CHAT + IMAGE API
+========================= */
 
 app.post("/api/chat", async (req, res) => {
   try {
@@ -66,11 +80,22 @@ app.post("/api/chat", async (req, res) => {
       req.body.message || ""
     ).trim();
 
-    if (!message) {
+    const image = req.body.image || null;
+
+    /*
+      message অথবা image—দুটোর কোনোটাই না থাকলে
+      কিছু পাঠাতে বলা হবে।
+    */
+    if (!message && !image) {
       return res.json({
-        reply: "কিছু লিখে পাঠাও 😊"
+        reply: "কিছু লিখে বা ছবি পাঠাও 😊"
       });
     }
+
+
+    /* =========================
+       PREVIOUS MEMORY
+    ========================= */
 
     const conversation = memory
       .slice(-30)
@@ -78,6 +103,11 @@ app.post("/api/chat", async (req, res) => {
         return `${item.role}: ${item.content}`;
       })
       .join("\n");
+
+
+    /* =========================
+       SYSTEM PROMPT
+    ========================= */
 
     const prompt = `
 তুমি Tuktuki AI, একজন কৃত্রিম বুদ্ধিমত্তা।
@@ -130,58 +160,160 @@ G M Shahriar-এর নাম অপ্রয়োজনীয়ভাবে �
 12. উত্তর স্বাভাবিক, সহজ এবং প্রয়োজন অনুযায়ী
 সংক্ষিপ্ত রাখবে।
 
+13. ব্যবহারকারী ছবি পাঠালে ছবিটি মনোযোগ দিয়ে
+বিশ্লেষণ করবে এবং ব্যবহারকারীর প্রশ্ন অনুযায়ী
+সহজ ভাষায় উত্তর দেবে।
+
+14. ছবিতে কিছু দেখা না গেলে বা পরিষ্কার না হলে
+অনুমান করে নিশ্চিত তথ্য হিসেবে বলবে না।
+
 আগের কথোপকথনের প্রাসঙ্গিক অংশ:
 ${conversation || "কোনো আগের কথোপকথন নেই।"}
 
 বর্তমান ব্যবহারকারীর বার্তা:
-${message}
+${message || "ব্যবহারকারী একটি ছবি পাঠিয়েছে। ছবিটি বিশ্লেষণ করো।"}
 
 এখন ব্যবহারকারীর প্রশ্নের সরাসরি উত্তর দাও।
 `;
 
+
+    /* =========================
+       AI CONTENT
+    ========================= */
+
+    let contents;
+
+
+    /*
+      ছবি থাকলে:
+      Text + Image একসাথে AI-তে পাঠানো হবে।
+    */
+
+    if (image) {
+
+      /*
+        image format:
+        data:image/jpeg;base64,XXXX
+      */
+
+      const match = image.match(
+        /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/
+      );
+
+      if (!match) {
+        return res.status(400).json({
+          reply: "ছবির ফরম্যাট সঠিক নয়। আবার চেষ্টা করো।"
+        });
+      }
+
+      const mimeType = match[1];
+      const base64Data = match[2];
+
+      contents = [
+        {
+          text: prompt
+        },
+        {
+          inlineData: {
+            mimeType: mimeType,
+            data: base64Data
+          }
+        }
+      ];
+
+    } else {
+
+      /*
+        শুধু Text Chat
+      */
+
+      contents = prompt;
+
+    }
+
+
+    /* =========================
+       GEMINI REQUEST
+    ========================= */
+
     const response =
       await ai.models.generateContent({
         model: "gemini-3.1-flash-lite",
-        contents: prompt
+        contents: contents
       });
+
 
     const reply =
       response.text ||
       "দুঃখিত, কোনো উত্তর পাওয়া যায়নি।";
 
-    memory.push({
-      role: "ব্যবহারকারী",
-      content: message
-    });
+
+    /* =========================
+       SAVE MEMORY
+    ========================= */
+
+    if (message) {
+
+      memory.push({
+        role: "ব্যবহারকারী",
+        content: message
+      });
+
+    }
 
     memory.push({
       role: "Tuktuki AI",
       content: reply
     });
 
-    // Memory খুব বড় হয়ে যাওয়া আটকানো
+
+    /*
+      Memory খুব বড় হওয়া আটকানো
+    */
+
     if (memory.length > 100) {
       memory = memory.slice(-100);
     }
 
     saveMemory();
 
+
+    /* =========================
+       RESPONSE
+    ========================= */
+
     res.json({
       reply: reply
     });
 
   } catch (error) {
-    console.error("AI Error:", error);
+
+    console.error(
+      "AI Error:",
+      error
+    );
 
     res.status(500).json({
       reply:
-        "দুঃখিত, এই মুহূর্তে উত্তর দিতে পারছি না।"
+        "দুঃখিত, এই মুহূর্তে উত্তর দিতে পারছি না। আবার চেষ্টা করো।"
     });
+
   }
 });
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(
-    `Tuktuki AI চলছে: http://localhost:${PORT}`
-  );
-});
+
+/* =========================
+   SERVER
+========================= */
+
+app.listen(
+  PORT,
+  "0.0.0.0",
+  () => {
+
+    console.log(
+      `Tuktuki AI চলছে: http://localhost:${PORT}`
+    );
+
+  }
+);

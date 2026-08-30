@@ -3,134 +3,221 @@ require("dotenv").config();
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
-const { GoogleGenAI } = require("@google/genai");
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+const {
+  GoogleGenAI
+} = require("@google/genai");
 
-const apiKey = process.env.GEMINI_API_KEY;
+
+const app =
+  express();
+
+const PORT =
+  process.env.PORT || 3000;
+
+
+const apiKey =
+  process.env.GEMINI_API_KEY;
+
 
 if (!apiKey) {
-  console.error("API key পাওয়া যায়নি ❌");
+
+  console.error(
+    "API key পাওয়া যায়নি ❌"
+  );
+
   process.exit(1);
+
 }
 
-const ai = new GoogleGenAI({
-  apiKey: apiKey
-});
 
-const memoryFile = path.join(__dirname, "memory.json");
+const ai =
+  new GoogleGenAI({
+    apiKey: apiKey
+  });
+
+
+/* =========================
+   MEMORY
+========================= */
+
+const memoryFile =
+  path.join(
+    __dirname,
+    "memory.json"
+  );
+
 
 let memory = [];
 
-try {
-  if (fs.existsSync(memoryFile)) {
-    memory = JSON.parse(
-      fs.readFileSync(memoryFile, "utf8")
-    );
 
-    if (!Array.isArray(memory)) {
+try {
+
+  if (
+    fs.existsSync(
+      memoryFile
+    )
+  ) {
+
+    memory =
+      JSON.parse(
+        fs.readFileSync(
+          memoryFile,
+          "utf8"
+        )
+      );
+
+
+    if (
+      !Array.isArray(memory)
+    ) {
+
       memory = [];
+
     }
+
   }
+
 } catch (error) {
+
   console.error(
     "Memory পড়তে সমস্যা হয়েছে:",
     error.message
   );
 
   memory = [];
+
 }
 
+
+/* =========================
+   SAVE MEMORY
+========================= */
+
 function saveMemory() {
+
   try {
+
     fs.writeFileSync(
       memoryFile,
-      JSON.stringify(memory, null, 2),
+
+      JSON.stringify(
+        memory,
+        null,
+        2
+      ),
+
       "utf8"
     );
+
   } catch (error) {
+
     console.error(
       "Memory save করতে সমস্যা হয়েছে:",
       error.message
     );
+
   }
+
 }
 
-/*
-  JSON body একটু বড় করা হলো,
-  যাতে ছবি Base64 হিসেবে পাঠানো যায়।
-*/
+
+/* =========================
+   MIDDLEWARE
+========================= */
+
 app.use(
   express.json({
     limit: "10mb"
   })
 );
 
-app.use(express.static(__dirname));
+
+app.use(
+  express.static(
+    __dirname
+  )
+);
 
 
 /* =========================
-   CHAT + IMAGE API
+   CHAT API
 ========================= */
 
-app.post("/api/chat", async (req, res) => {
-  try {
-    const message = String(
-      req.body.message || ""
-    ).trim();
+app.post(
+  "/api/chat",
+  async (req, res) => {
 
-    const image = req.body.image || null;
+    try {
 
-    /*
-      message অথবা image—দুটোর কোনোটাই না থাকলে
-      কিছু পাঠাতে বলা হবে।
-    */
-    if (!message && !image) {
-      return res.json({
-        reply: "কিছু লিখে বা ছবি পাঠাও 😊"
-      });
-    }
+      const message =
+        String(
+          req.body.message || ""
+        ).trim();
 
 
-    /* =========================
-       PREVIOUS MEMORY
-    ========================= */
-
-    const conversation = memory
-      .slice(-30)
-      .map(item => {
-        return `${item.role}: ${item.content}`;
-      })
-      .join("\n");
+      const image =
+        req.body.image || null;
 
 
-    /* =========================
-       SYSTEM PROMPT
-    ========================= */
+      /*
+        Text এবং image দুটোই
+        না থাকলে
+      */
 
-    const prompt = `
-তুমি Tuktuki AI, একজন কৃত্রিম বুদ্ধিমত্তা।
+      if (
+        !message &&
+        !image
+      ) {
+
+        return res.json({
+          reply:
+            "কিছু লিখে বা ছবি পাঠিয়ে চেষ্টা করো 😊"
+        });
+
+      }
+
+
+      /* =====================
+         CONVERSATION
+      ===================== */
+
+      const conversation =
+        memory
+          .slice(-30)
+          .map(item => {
+
+            return (
+              `${item.role}: ${item.content}`
+            );
+
+          })
+          .join("\n");
+
+
+      /* =====================
+         SYSTEM PROMPT
+      ===================== */
+
+      const systemPrompt = `
+তুমি Tuktuki AI, একজন কৃত্রিম বুদ্ধিমত্তা সহকারী।
 
 তোমার developer-এর নাম G M Shahriar।
 
 তোমার আচরণের নিয়ম:
 
-1. স্বাভাবিক ও বন্ধুসুলভ বাংলায় উত্তর দেবে।
+1. স্বাভাবিক, সহজ ও বন্ধুসুলভ বাংলায় উত্তর দেবে।
 
-2. ব্যবহারকারীর নাম জানা থাকলেও অপ্রয়োজনীয়ভাবে
-তার নাম বলবে না।
+2. ব্যবহারকারীর নাম জানা থাকলেও অপ্রয়োজনীয়ভাবে নাম বলবে না।
 
-3. প্রতিটি উত্তরের শুরুতে "শাহরিয়ার" বা
-অন্য কোনো নাম ব্যবহার করবে না।
+3. প্রতিটি উত্তরের শুরুতে "শাহরিয়ার" বা অন্য কোনো নাম ব্যবহার করবে না।
 
-4. ব্যবহারকারীর নাম শুধুমাত্র তখনই ব্যবহার করবে
-যখন প্রশ্ন বা কথোপকথনের জন্য সত্যিই প্রয়োজন।
+4. ব্যবহারকারীর নাম শুধুমাত্র তখন ব্যবহার করবে যখন কথোপকথনের জন্য সত্যিই প্রয়োজন।
 
 5. ব্যবহারকারী যদি জিজ্ঞেস করে:
 "তোমার নাম কি?"
 "তোমার নাম কী?"
-তাহলে ঠিক এই উত্তর দেবে:
+তাহলে বলবে:
 
 "আমার নাম Tuktuki AI, একজন কৃত্রিম বুদ্ধিমত্তা। আমাকে তৈরি করেছেন আমার developer G M Shahriar।"
 
@@ -141,165 +228,219 @@ app.post("/api/chat", async (req, res) => {
 
 "আমি Tuktuki AI, একজন কৃত্রিম বুদ্ধিমত্তা। আমাকে তৈরি করেছেন আমার developer G M Shahriar।"
 
-7. অন্য সাধারণ প্রশ্নের উত্তরে
-G M Shahriar-এর নাম অপ্রয়োজনীয়ভাবে বলবে না।
+7. অন্য সাধারণ প্রশ্নের উত্তরে G M Shahriar-এর নাম অপ্রয়োজনীয়ভাবে বলবে না।
 
-8. নিজেকে Gemini বা Google Gemini হিসেবে
-পরিচয় দেবে না।
+8. নিজেকে Gemini বা Google Gemini হিসেবে পরিচয় দেবে না।
 
-9. আগের কথোপকথন থেকে তথ্য ব্যবহার করবে,
-কিন্তু শুধুমাত্র বর্তমান প্রশ্নের সঙ্গে
-প্রাসঙ্গিক হলে।
+9. আগের কথোপকথনের তথ্য শুধুমাত্র বর্তমান প্রশ্নের সঙ্গে প্রাসঙ্গিক হলে ব্যবহার করবে।
 
-10. ব্যবহারকারী কোনো ব্যক্তিগত পছন্দ বা তথ্য
-জানালে ভবিষ্যতে প্রাসঙ্গিক হলে সেটি মনে রাখবে।
+10. ব্যবহারকারী কোনো পছন্দ বা তথ্য জানালে ভবিষ্যতে প্রাসঙ্গিক হলে সেটি মনে রাখবে।
 
-11. একই তথ্য বারবার অপ্রয়োজনীয়ভাবে
-উল্লেখ করবে না।
+11. একই তথ্য বারবার অপ্রয়োজনীয়ভাবে উল্লেখ করবে না।
 
-12. উত্তর স্বাভাবিক, সহজ এবং প্রয়োজন অনুযায়ী
-সংক্ষিপ্ত রাখবে।
+12. উত্তর স্বাভাবিক, পরিষ্কার এবং প্রয়োজন অনুযায়ী সংক্ষিপ্ত রাখবে।
 
-13. ব্যবহারকারী ছবি পাঠালে ছবিটি মনোযোগ দিয়ে
-বিশ্লেষণ করবে এবং ব্যবহারকারীর প্রশ্ন অনুযায়ী
-সহজ ভাষায় উত্তর দেবে।
+13. ব্যবহারকারী ছবি পাঠালে ছবিটি মনোযোগ দিয়ে বিশ্লেষণ করবে এবং ছবির বিষয় সম্পর্কে সরাসরি উত্তর দেবে।
 
-14. ছবিতে কিছু দেখা না গেলে বা পরিষ্কার না হলে
-অনুমান করে নিশ্চিত তথ্য হিসেবে বলবে না।
+14. ছবিতে কিছু দেখা না গেলে বা ছবিটি অস্পষ্ট হলে সেটা পরিষ্কারভাবে জানাবে।
+
+15. ছবির ব্যাপারে অনুমানকে নিশ্চিত তথ্য হিসেবে বলবে না।
 
 আগের কথোপকথনের প্রাসঙ্গিক অংশ:
+
 ${conversation || "কোনো আগের কথোপকথন নেই।"}
 
 বর্তমান ব্যবহারকারীর বার্তা:
-${message || "ব্যবহারকারী একটি ছবি পাঠিয়েছে। ছবিটি বিশ্লেষণ করো।"}
+
+${message || "ব্যবহারকারী একটি ছবি পাঠিয়েছে।"}
 
 এখন ব্যবহারকারীর প্রশ্নের সরাসরি উত্তর দাও।
 `;
 
 
-    /* =========================
-       AI CONTENT
-    ========================= */
+      /* =====================
+         GEMINI CONTENT
+      ===================== */
 
-    let contents;
+      const parts = [];
 
 
-    /*
-      ছবি থাকলে:
-      Text + Image একসাথে AI-তে পাঠানো হবে।
-    */
+      parts.push({
+        text:
+          systemPrompt
+      });
 
-    if (image) {
 
       /*
-        image format:
-        data:image/jpeg;base64,XXXX
+        Image থাকলে
+        base64 থেকে inlineData
       */
 
-      const match = image.match(
-        /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/
-      );
+      if (image) {
 
-      if (!match) {
-        return res.status(400).json({
-          reply: "ছবির ফরম্যাট সঠিক নয়। আবার চেষ্টা করো।"
-        });
+        try {
+
+          /*
+            data:image/jpeg;base64,...
+          */
+
+          const match =
+            image.match(
+              /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/
+            );
+
+
+          if (!match) {
+
+            return res.status(400).json({
+              reply:
+                "ছবির format সঠিক নয়। আবার ছবি নির্বাচন করো।"
+            });
+
+          }
+
+
+          const mimeType =
+            match[1];
+
+          const base64Data =
+            match[2];
+
+
+          parts.push({
+
+            inlineData: {
+
+              mimeType:
+                mimeType,
+
+              data:
+                base64Data
+
+            }
+
+          });
+
+        } catch (error) {
+
+          console.error(
+            "Image processing error:",
+            error
+          );
+
+          return res.status(400).json({
+            reply:
+              "ছবিটি প্রক্রিয়া করতে সমস্যা হয়েছে।"
+          });
+
+        }
+
       }
 
-      const mimeType = match[1];
-      const base64Data = match[2];
 
-      contents = [
-        {
-          text: prompt
-        },
-        {
-          inlineData: {
-            mimeType: mimeType,
-            data: base64Data
-          }
-        }
-      ];
+      /* =====================
+         AI REQUEST
+      ===================== */
 
-    } else {
+      const response =
+        await ai.models.generateContent({
 
-      /*
-        শুধু Text Chat
-      */
+          model:
+            "gemini-3.1-flash-lite",
 
-      contents = prompt;
+          contents: [
+            {
+              role: "user",
+              parts: parts
+            }
+          ]
 
-    }
+        });
 
 
-    /* =========================
-       GEMINI REQUEST
-    ========================= */
-
-    const response =
-      await ai.models.generateContent({
-        model: "gemini-3.1-flash-lite",
-        contents: contents
-      });
+      const reply =
+        response.text ||
+        "দুঃখিত, কোনো উত্তর পাওয়া যায়নি।";
 
 
-    const reply =
-      response.text ||
-      "দুঃখিত, কোনো উত্তর পাওয়া যায়নি।";
+      /* =====================
+         SAVE MEMORY
+      ===================== */
 
+      if (message) {
 
-    /* =========================
-       SAVE MEMORY
-    ========================= */
+        memory.push({
 
-    if (message) {
+          role:
+            "ব্যবহারকারী",
+
+          content:
+            message
+
+        });
+
+      }
+
 
       memory.push({
-        role: "ব্যবহারকারী",
-        content: message
+
+        role:
+          "Tuktuki AI",
+
+        content:
+          reply
+
+      });
+
+
+      /*
+        Memory limit
+      */
+
+      if (
+        memory.length > 100
+      ) {
+
+        memory =
+          memory.slice(-100);
+
+      }
+
+
+      saveMemory();
+
+
+      /* =====================
+         RESPONSE
+      ===================== */
+
+      res.json({
+
+        reply:
+          reply
+
+      });
+
+
+    } catch (error) {
+
+      console.error(
+        "AI Error:",
+        error
+      );
+
+
+      res.status(500).json({
+
+        reply:
+          "দুঃখিত, এই মুহূর্তে উত্তর দিতে পারছি না। আবার চেষ্টা করো।"
+
       });
 
     }
 
-    memory.push({
-      role: "Tuktuki AI",
-      content: reply
-    });
-
-
-    /*
-      Memory খুব বড় হওয়া আটকানো
-    */
-
-    if (memory.length > 100) {
-      memory = memory.slice(-100);
-    }
-
-    saveMemory();
-
-
-    /* =========================
-       RESPONSE
-    ========================= */
-
-    res.json({
-      reply: reply
-    });
-
-  } catch (error) {
-
-    console.error(
-      "AI Error:",
-      error
-    );
-
-    res.status(500).json({
-      reply:
-        "দুঃখিত, এই মুহূর্তে উত্তর দিতে পারছি না। আবার চেষ্টা করো।"
-    });
-
   }
-});
+);
 
 
 /* =========================

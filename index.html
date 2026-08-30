@@ -1,204 +1,80 @@
 <!DOCTYPE html>
 <html lang="bn">
-
 <head>
-
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
-
-  <meta
-    name="theme-color"
-    content="#111827"
-  >
-
-  <meta
-    name="mobile-web-app-capable"
-    content="yes"
-  >
-
-  <meta
-    name="apple-mobile-web-app-capable"
-    content="yes"
-  >
-
-  <meta
-    name="apple-mobile-web-app-title"
-    content="Tuktuki AI"
-  >
+  <meta name="theme-color" content="#111827">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Tuktuki AI">
 
   <title>Tuktuki AI</title>
 
-  <link
-    rel="manifest"
-    href="/manifest.json"
-  >
-
-  <link
-    rel="icon"
-    href="/icon-192.png"
-    type="image/png"
-  >
-
-  <link
-    rel="stylesheet"
-    href="/style.css"
-  >
-
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/icon-192.png" type="image/png">
+  <link rel="stylesheet" href="/style.css">
 </head>
-
 
 <body>
 
-  <div class="app">
+<div class="app">
 
+  <!-- HEADER -->
+  <header class="header">
 
-    <!-- HEADER -->
+    <div class="brand">
 
-    <header class="header">
-
-      <div class="brand">
-
-        <div class="logo">
-
-          <img
-            src="/icon-192.png"
-            alt="Tuktuki AI"
-          >
-
-        </div>
-
-
-        <div class="brand-info">
-
-          <div class="brand-text">
-            Tuktuki AI
-          </div>
-
-          <div class="status">
-            ● Online
-          </div>
-
-        </div>
-
+      <div class="logo">
+        <img src="/icon-192.png" alt="Tuktuki AI">
       </div>
 
-
-      <div class="header-buttons">
-
-        <button
-          id="themeToggle"
-          type="button"
-        >
-          🌙
-        </button>
-
-
-        <button
-          id="clearChat"
-          type="button"
-        >
-          🗑️ Clear
-        </button>
-
-      </div>
-
-    </header>
-
-
-
-    <!-- CHAT -->
-
-    <main id="chat"></main>
-
-
-
-    <!-- IMAGE PREVIEW -->
-
-    <div
-      id="imagePreviewArea"
-      style="display:none;"
-    >
-
-      <div class="image-preview-box">
-
-        <img
-          id="imagePreview"
-          src=""
-          alt="Selected image"
-        >
-
-        <button
-          id="removeImage"
-          type="button"
-        >
-          ✕
-        </button>
-
+      <div class="brand-info">
+        <div class="brand-text">Tuktuki AI</div>
+        <div class="status">
+          <span class="online-dot"></span>
+          Online
+        </div>
       </div>
 
     </div>
 
+    <div class="header-buttons">
 
-
-    <!-- INPUT AREA -->
-
-    <div class="input-area">
-
-
-      <!-- IMAGE BUTTON -->
-
-      <button
-        id="imageButton"
-        type="button"
-        aria-label="ছবি নির্বাচন"
-      >
-        📷
+      <button id="themeToggle" type="button" aria-label="Theme">
+        🌙
       </button>
 
-
-      <!-- HIDDEN FILE INPUT -->
-
-      <input
-        id="imageInput"
-        type="file"
-        accept="image/*"
-        hidden
-      >
-
-
-      <!-- MESSAGE -->
-
-      <input
-        id="message"
-        type="text"
-        placeholder="এখানে লিখুন..."
-        autocomplete="off"
-      >
-
-
-      <!-- VOICE -->
-
-      <button
-        id="voiceButton"
-        type="button"
-        aria-label="Voice Input"
-      >
-        🎤
+      <button id="clearChat" type="button">
+        🗑️ <span>Clear</span>
       </button>
 
+    </div>
 
-      <!-- SEND -->
+  </header>
+
+
+  <!-- CHAT -->
+  <main id="chat"></main>
+
+
+  <!-- IMAGE PREVIEW -->
+  <div id="imagePreviewArea" class="image-preview-area">
+
+    <div class="image-preview-box">
+
+      <img
+        id="imagePreview"
+        src=""
+        alt="Selected image"
+      >
 
       <button
-        id="send"
+        id="removeImage"
         type="button"
-        aria-label="Send"
+        aria-label="Remove image"
       >
-        ➤
+        ✕
       </button>
 
     </div>
@@ -206,49 +82,80 @@
   </div>
 
 
+  <!-- INPUT -->
+  <div class="input-area">
 
-  <!-- APP JS -->
+    <button
+      id="imageButton"
+      class="tool-button"
+      type="button"
+      aria-label="ছবি নির্বাচন"
+    >
+      📷
+    </button>
 
-  <script src="/app.js"></script>
+    <input
+      id="imageInput"
+      type="file"
+      accept="image/*"
+      hidden
+    >
+
+    <div class="message-input-wrap">
+
+      <input
+        id="message"
+        type="text"
+        placeholder="Tuktuki AI-কে কিছু জিজ্ঞেস করুন..."
+        autocomplete="off"
+      >
+
+    </div>
+
+    <button
+      id="voiceButton"
+      class="tool-button"
+      type="button"
+      aria-label="Voice Input"
+    >
+      🎤
+    </button>
+
+    <button
+      id="send"
+      type="button"
+      aria-label="Send"
+    >
+      ➤
+    </button>
+
+  </div>
+
+</div>
 
 
+<script src="/app.js"></script>
 
-  <!-- SERVICE WORKER -->
+<script>
 
-  <script>
+if ("serviceWorker" in navigator) {
 
-    if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
 
-      window.addEventListener(
-        "load",
-        () => {
+    navigator.serviceWorker
+      .register("/sw.js")
+      .then(() => {
+        console.log("Tuktuki AI Service Worker চালু হয়েছে");
+      })
+      .catch(error => {
+        console.log("Service Worker Error:", error);
+      });
 
-          navigator.serviceWorker
-            .register("/sw.js")
-            .then(() => {
+  });
 
-              console.log(
-                "Tuktuki AI Service Worker চালু হয়েছে"
-              );
+}
 
-            })
-            .catch(error => {
-
-              console.log(
-                "Service Worker Error:",
-                error
-              );
-
-            });
-
-        }
-      );
-
-    }
-
-  </script>
-
+</script>
 
 </body>
-
 </html>

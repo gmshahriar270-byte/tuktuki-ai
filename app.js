@@ -17,7 +17,7 @@ let selectedImage = null;
 
 
 /* =========================
-   LOAD HISTORY
+   HISTORY
 ========================= */
 
 try {
@@ -28,14 +28,9 @@ try {
   if (!Array.isArray(history)) {
     history = [];
   }
-} catch {
+} catch (error) {
   history = [];
 }
-
-
-/* =========================
-   SAVE HISTORY
-========================= */
 
 function saveHistory() {
   localStorage.setItem(
@@ -51,21 +46,253 @@ function saveHistory() {
 
 function addMessage(text, type, extraClass = "") {
 
-  const div = document.createElement("div");
+  const row = document.createElement("div");
 
-  div.className =
+  row.className =
+    "message-row " +
+    (type === "user" ? "user-row" : "ai-row");
+
+  const message = document.createElement("div");
+
+  message.className =
     "message " +
     type +
     " " +
     extraClass;
 
-  div.textContent = text;
+  message.textContent = text;
 
-  chat.appendChild(div);
+  row.appendChild(message);
+  chat.appendChild(row);
 
   chat.scrollTop = chat.scrollHeight;
 
-  return div;
+  return row;
+}
+
+
+/* =========================
+   AI MESSAGE WITH ACTIONS
+========================= */
+
+function addAIMessage(text) {
+
+  const row = document.createElement("div");
+
+  row.className = "message-row ai-row";
+
+  const wrapper = document.createElement("div");
+
+  wrapper.className = "ai-message-wrapper";
+
+  const message = document.createElement("div");
+
+  message.className = "message ai";
+
+  message.textContent = text;
+
+  wrapper.appendChild(message);
+
+
+  /* ACTION BUTTONS */
+
+  const actions = document.createElement("div");
+
+  actions.className = "message-actions";
+
+
+  /* COPY */
+
+  const copyButton = document.createElement("button");
+
+  copyButton.type = "button";
+  copyButton.textContent = "📋 Copy";
+
+  copyButton.addEventListener("click", async () => {
+
+    try {
+
+      await navigator.clipboard.writeText(text);
+
+      copyButton.textContent = "✅ Copied";
+
+      setTimeout(() => {
+        copyButton.textContent = "📋 Copy";
+      }, 1500);
+
+    } catch (error) {
+
+      copyButton.textContent = "❌ Copy failed";
+
+      setTimeout(() => {
+        copyButton.textContent = "📋 Copy";
+      }, 1500);
+
+    }
+
+  });
+
+
+  /* READ ALOUD */
+
+  const speakButton = document.createElement("button");
+
+  speakButton.type = "button";
+  speakButton.textContent = "🔊 শুনুন";
+
+  speakButton.addEventListener("click", () => {
+
+    if (
+      !("speechSynthesis" in window) ||
+      !("SpeechSynthesisUtterance" in window)
+    ) {
+
+      alert(
+        "এই ব্রাউজারে Text-to-Speech চালু করা যাচ্ছে না। Chrome দিয়ে চেষ্টা করো।"
+      );
+
+      return;
+    }
+
+    try {
+
+      speechSynthesis.cancel();
+
+      const speech =
+        new SpeechSynthesisUtterance(text);
+
+      speech.lang = "bn-BD";
+      speech.rate = 0.9;
+      speech.pitch = 1;
+
+      speakButton.textContent = "⏳ চালু হচ্ছে...";
+
+      speech.onstart = () => {
+        speakButton.textContent = "⏹️ বন্ধ";
+      };
+
+      speech.onend = () => {
+        speakButton.textContent = "🔊 শুনুন";
+      };
+
+      speech.onerror = () => {
+
+        speakButton.textContent = "🔊 শুনুন";
+
+        alert(
+          "ভয়েস চালু করা যায়নি। ফোনের Text-to-Speech সেটিংস পরীক্ষা করো।"
+        );
+
+      };
+
+      speechSynthesis.speak(speech);
+
+    } catch (error) {
+
+      console.error("TTS Error:", error);
+
+      speakButton.textContent = "🔊 শুনুন";
+
+      alert("Text-to-Speech চালু করা যায়নি।");
+
+    }
+
+  });
+
+
+  /* STOP VOICE */
+
+  speakButton.addEventListener("dblclick", () => {
+
+    if ("speechSynthesis" in window) {
+      speechSynthesis.cancel();
+      speakButton.textContent = "🔊 শুনুন";
+    }
+
+  });
+
+
+  /* REGENERATE */
+
+  const regenerateButton = document.createElement("button");
+
+  regenerateButton.type = "button";
+  regenerateButton.textContent = "🔄 আবার";
+
+  regenerateButton.addEventListener("click", async () => {
+
+    regenerateButton.disabled = true;
+    regenerateButton.textContent = "⏳ অপেক্ষা...";
+
+    try {
+
+      const response = await fetch("/api/chat", {
+
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify({
+          message: text,
+          history: history,
+          image: null
+        })
+
+      });
+
+      if (!response.ok) {
+        throw new Error("Server error");
+      }
+
+      const data = await response.json();
+
+      const newReply =
+        data.reply ||
+        "দুঃখিত, কোনো উত্তর পাওয়া যায়নি।";
+
+      addAIMessage(newReply);
+
+      history.push({
+        role: "assistant",
+        content: newReply
+      });
+
+      saveHistory();
+
+    } catch (error) {
+
+      console.error(
+        "Regenerate Error:",
+        error
+      );
+
+      alert(
+        "আবার উত্তর তৈরি করা যায়নি।"
+      );
+
+    }
+
+    regenerateButton.disabled = false;
+    regenerateButton.textContent = "🔄 আবার";
+
+  });
+
+
+  actions.appendChild(copyButton);
+  actions.appendChild(speakButton);
+  actions.appendChild(regenerateButton);
+
+  wrapper.appendChild(actions);
+
+  row.appendChild(wrapper);
+
+  chat.appendChild(row);
+
+  chat.scrollTop = chat.scrollHeight;
+
+  return row;
 }
 
 
@@ -79,9 +306,8 @@ function loadChat() {
 
   if (history.length === 0) {
 
-    addMessage(
-      "হ্যালো 👋 আমি Tuktuki AI।\nআমার সাথে চ্যাট করো!",
-      "ai"
+    addAIMessage(
+      "হ্যালো 👋 আমি Tuktuki AI।\nআমার সাথে চ্যাট করো!"
     );
 
     return;
@@ -89,16 +315,17 @@ function loadChat() {
 
   history.forEach(item => {
 
-    if (
-      item.role === "user" ||
-      item.role === "assistant"
-    ) {
+    if (item.role === "user") {
 
       addMessage(
         item.content,
-        item.role === "user"
-          ? "user"
-          : "ai"
+        "user"
+      );
+
+    } else if (item.role === "assistant") {
+
+      addAIMessage(
+        item.content
       );
 
     }
@@ -116,11 +343,11 @@ clearButton.addEventListener(
   "click",
   () => {
 
-    const confirmClear = confirm(
+    const ok = confirm(
       "এই ডিভাইসের চ্যাট হিস্ট্রি মুছে ফেলতে চাও?"
     );
 
-    if (!confirmClear) {
+    if (!ok) {
       return;
     }
 
@@ -129,6 +356,10 @@ clearButton.addEventListener(
     localStorage.removeItem(
       "tuktuki_history"
     );
+
+    if ("speechSynthesis" in window) {
+      speechSynthesis.cancel();
+    }
 
     loadChat();
 
@@ -143,16 +374,10 @@ clearButton.addEventListener(
 imageButton.addEventListener(
   "click",
   () => {
-
     imageInput.click();
-
   }
 );
 
-
-/* =========================
-   IMAGE CHANGE
-========================= */
 
 imageInput.addEventListener(
   "change",
@@ -165,7 +390,6 @@ imageInput.addEventListener(
       return;
     }
 
-
     if (!file.type.startsWith("image/")) {
 
       alert(
@@ -176,11 +400,6 @@ imageInput.addEventListener(
 
       return;
     }
-
-
-    /*
-      বড় ছবি আটকানো
-    */
 
     if (file.size > 7 * 1024 * 1024) {
 
@@ -193,10 +412,8 @@ imageInput.addEventListener(
       return;
     }
 
-
     const reader =
       new FileReader();
-
 
     reader.onload = () => {
 
@@ -210,7 +427,6 @@ imageInput.addEventListener(
         "block";
 
     };
-
 
     reader.readAsDataURL(file);
 
@@ -248,15 +464,10 @@ async function sendMessage() {
   const message =
     input.value.trim();
 
-
   if (!message && !selectedImage) {
     return;
   }
 
-
-  /*
-    User message দেখানো
-  */
 
   if (message) {
 
@@ -278,13 +489,13 @@ async function sendMessage() {
   input.value = "";
 
   sendButton.disabled = true;
-
   imageButton.disabled = true;
+  voiceButton.disabled = true;
 
 
   const typing =
     addMessage(
-      "Tuktuki AI লিখছে...",
+      "Tuktuki AI লিখছে",
       "ai",
       "typing"
     );
@@ -296,6 +507,7 @@ async function sendMessage() {
       await fetch(
         "/api/chat",
         {
+
           method: "POST",
 
           headers: {
@@ -342,15 +554,8 @@ async function sendMessage() {
       "দুঃখিত, কোনো উত্তর পাওয়া যায়নি।";
 
 
-    addMessage(
-      reply,
-      "ai"
-    );
+    addAIMessage(reply);
 
-
-    /*
-      Text থাকলে history-তে রাখব
-    */
 
     if (message) {
 
@@ -376,10 +581,6 @@ async function sendMessage() {
 
     saveHistory();
 
-
-    /*
-      ছবি clear
-    */
 
     selectedImage = null;
 
@@ -411,8 +612,8 @@ async function sendMessage() {
 
 
   sendButton.disabled = false;
-
   imageButton.disabled = false;
+  voiceButton.disabled = false;
 
   input.focus();
 
@@ -430,7 +631,7 @@ sendButton.addEventListener(
 
 
 /* =========================
-   ENTER KEY
+   ENTER
 ========================= */
 
 input.addEventListener(
@@ -485,12 +686,10 @@ themeToggle.addEventListener(
       "dark"
     );
 
-
     const isDark =
       document.body.classList.contains(
         "dark"
       );
-
 
     localStorage.setItem(
       "tuktuki_theme",
@@ -498,7 +697,6 @@ themeToggle.addEventListener(
         ? "dark"
         : "light"
     );
-
 
     themeToggle.textContent =
       isDark
@@ -523,15 +721,9 @@ if (SpeechRecognition) {
   const recognition =
     new SpeechRecognition();
 
-
-  recognition.lang =
-    "bn-BD";
-
-  recognition.continuous =
-    false;
-
-  recognition.interimResults =
-    false;
+  recognition.lang = "bn-BD";
+  recognition.continuous = false;
+  recognition.interimResults = false;
 
 
   voiceButton.addEventListener(
@@ -544,6 +736,10 @@ if (SpeechRecognition) {
 
         voiceButton.textContent =
           "🔴";
+
+        voiceButton.classList.add(
+          "listening"
+        );
 
       } catch (error) {
 
@@ -564,8 +760,7 @@ if (SpeechRecognition) {
       const text =
         event.results[0][0].transcript;
 
-      input.value +=
-        text;
+      input.value += text;
 
       input.focus();
 
@@ -578,17 +773,29 @@ if (SpeechRecognition) {
       voiceButton.textContent =
         "🎤";
 
+      voiceButton.classList.remove(
+        "listening"
+      );
+
     };
 
 
   recognition.onerror =
-    () => {
+    error => {
+
+      console.log(
+        "Voice error:",
+        error
+      );
 
       voiceButton.textContent =
         "🎤";
 
-    };
+      voiceButton.classList.remove(
+        "listening"
+      );
 
+    };
 
 } else {
 
@@ -597,7 +804,7 @@ if (SpeechRecognition) {
     () => {
 
       alert(
-        "এই ব্রাউজারে Voice Input সমর্থিত নয়।"
+        "এই ব্রাউজারে Voice Input সমর্থিত নয়। Chrome দিয়ে চেষ্টা করো।"
       );
 
     }

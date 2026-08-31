@@ -28,7 +28,7 @@ try {
   if (!Array.isArray(history)) {
     history = [];
   }
-} catch (error) {
+} catch {
   history = [];
 }
 
@@ -41,28 +41,27 @@ function saveHistory() {
 
 
 /* =========================
-   ADD MESSAGE
+   NORMAL MESSAGE
 ========================= */
 
 function addMessage(text, type, extraClass = "") {
-
   const row = document.createElement("div");
 
   row.className =
     "message-row " +
     (type === "user" ? "user-row" : "ai-row");
 
-  const message = document.createElement("div");
+  const box = document.createElement("div");
 
-  message.className =
+  box.className =
     "message " +
     type +
     " " +
     extraClass;
 
-  message.textContent = text;
+  box.textContent = text;
 
-  row.appendChild(message);
+  row.appendChild(box);
   chat.appendChild(row);
 
   chat.scrollTop = chat.scrollHeight;
@@ -72,32 +71,23 @@ function addMessage(text, type, extraClass = "") {
 
 
 /* =========================
-   AI MESSAGE WITH ACTIONS
+   AI MESSAGE
 ========================= */
 
 function addAIMessage(text) {
-
   const row = document.createElement("div");
-
   row.className = "message-row ai-row";
 
   const wrapper = document.createElement("div");
-
   wrapper.className = "ai-message-wrapper";
 
-  const message = document.createElement("div");
+  const box = document.createElement("div");
+  box.className = "message ai";
+  box.textContent = text;
 
-  message.className = "message ai";
-
-  message.textContent = text;
-
-  wrapper.appendChild(message);
-
-
-  /* ACTION BUTTONS */
+  wrapper.appendChild(box);
 
   const actions = document.createElement("div");
-
   actions.className = "message-actions";
 
 
@@ -109,9 +99,7 @@ function addAIMessage(text) {
   copyButton.textContent = "📋 Copy";
 
   copyButton.addEventListener("click", async () => {
-
     try {
-
       await navigator.clipboard.writeText(text);
 
       copyButton.textContent = "✅ Copied";
@@ -120,22 +108,43 @@ function addAIMessage(text) {
         copyButton.textContent = "📋 Copy";
       }, 1500);
 
-    } catch (error) {
+    } catch {
+      try {
+        const area = document.createElement("textarea");
 
-      copyButton.textContent = "❌ Copy failed";
+        area.value = text;
 
-      setTimeout(() => {
-        copyButton.textContent = "📋 Copy";
-      }, 1500);
+        document.body.appendChild(area);
 
+        area.select();
+
+        document.execCommand("copy");
+
+        area.remove();
+
+        copyButton.textContent = "✅ Copied";
+
+        setTimeout(() => {
+          copyButton.textContent = "📋 Copy";
+        }, 1500);
+
+      } catch {
+        copyButton.textContent = "❌ Copy failed";
+
+        setTimeout(() => {
+          copyButton.textContent = "📋 Copy";
+        }, 1500);
+      }
     }
-
   });
 
 
-  /* READ ALOUD */
+  /* =========================
+     READ ALOUD
+  ========================= */
 
-  const speakButton = document.createElement("button");
+  const speakButton =
+    document.createElement("button");
 
   speakButton.type = "button";
   speakButton.textContent = "🔊 শুনুন";
@@ -146,17 +155,21 @@ function addAIMessage(text) {
       !("speechSynthesis" in window) ||
       !("SpeechSynthesisUtterance" in window)
     ) {
-
       alert(
-        "এই ব্রাউজারে Text-to-Speech চালু করা যাচ্ছে না। Chrome দিয়ে চেষ্টা করো।"
+        "এই ব্রাউজারে Text-to-Speech চালু করা যাচ্ছে না।"
       );
-
       return;
     }
 
     try {
 
-      speechSynthesis.cancel();
+      if (speechSynthesis.speaking) {
+        speechSynthesis.cancel();
+
+        speakButton.textContent = "🔊 শুনুন";
+
+        return;
+      }
 
       const speech =
         new SpeechSynthesisUtterance(text);
@@ -164,8 +177,6 @@ function addAIMessage(text) {
       speech.lang = "bn-BD";
       speech.rate = 0.9;
       speech.pitch = 1;
-
-      speakButton.textContent = "⏳ চালু হচ্ছে...";
 
       speech.onstart = () => {
         speakButton.textContent = "⏹️ বন্ধ";
@@ -176,15 +187,14 @@ function addAIMessage(text) {
       };
 
       speech.onerror = () => {
-
         speakButton.textContent = "🔊 শুনুন";
 
         alert(
           "ভয়েস চালু করা যায়নি। ফোনের Text-to-Speech সেটিংস পরীক্ষা করো।"
         );
-
       };
 
+      speechSynthesis.cancel();
       speechSynthesis.speak(speech);
 
     } catch (error) {
@@ -193,91 +203,108 @@ function addAIMessage(text) {
 
       speakButton.textContent = "🔊 শুনুন";
 
-      alert("Text-to-Speech চালু করা যায়নি।");
-
+      alert(
+        "Text-to-Speech চালু করা যায়নি।"
+      );
     }
-
   });
 
 
-  /* STOP VOICE */
+  /* =========================
+     REGENERATE
+  ========================= */
 
-  speakButton.addEventListener("dblclick", () => {
-
-    if ("speechSynthesis" in window) {
-      speechSynthesis.cancel();
-      speakButton.textContent = "🔊 শুনুন";
-    }
-
-  });
-
-
-  /* REGENERATE */
-
-  const regenerateButton = document.createElement("button");
+  const regenerateButton =
+    document.createElement("button");
 
   regenerateButton.type = "button";
   regenerateButton.textContent = "🔄 আবার";
 
-  regenerateButton.addEventListener("click", async () => {
+  regenerateButton.addEventListener(
+    "click",
+    async () => {
 
-    regenerateButton.disabled = true;
-    regenerateButton.textContent = "⏳ অপেক্ষা...";
+      const previousUser =
+        [...history]
+          .reverse()
+          .find(item => item.role === "user");
 
-    try {
-
-      const response = await fetch("/api/chat", {
-
-        method: "POST",
-
-        headers: {
-          "Content-Type": "application/json"
-        },
-
-        body: JSON.stringify({
-          message: text,
-          history: history,
-          image: null
-        })
-
-      });
-
-      if (!response.ok) {
-        throw new Error("Server error");
+      if (!previousUser) {
+        return;
       }
 
-      const data = await response.json();
+      regenerateButton.disabled = true;
 
-      const newReply =
-        data.reply ||
-        "দুঃখিত, কোনো উত্তর পাওয়া যায়নি।";
+      const typing =
+        addMessage(
+          "Tuktuki AI লিখছে...",
+          "ai",
+          "typing"
+        );
 
-      addAIMessage(newReply);
+      try {
 
-      history.push({
-        role: "assistant",
-        content: newReply
-      });
+        const response =
+          await fetch("/api/chat", {
+            method: "POST",
 
-      saveHistory();
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
 
-    } catch (error) {
+            body: JSON.stringify({
+              message:
+                previousUser.content,
 
-      console.error(
-        "Regenerate Error:",
-        error
-      );
+              history:
+                history
+            })
+          });
 
-      alert(
-        "আবার উত্তর তৈরি করা যায়নি।"
-      );
+        if (!response.ok) {
+          throw new Error(
+            "Server error " +
+            response.status
+          );
+        }
 
+        const data =
+          await response.json();
+
+        typing.remove();
+
+        const reply =
+          data.reply ||
+          "দুঃখিত, কোনো উত্তর পাওয়া যায়নি।";
+
+        addAIMessage(reply);
+
+        history.push({
+          role: "assistant",
+          content: reply
+        });
+
+        saveHistory();
+
+      } catch (error) {
+
+        console.error(
+          "Regenerate Error:",
+          error
+        );
+
+        typing.remove();
+
+        addMessage(
+          "দুঃখিত, আবার উত্তর তৈরি করা যায়নি।",
+          "ai"
+        );
+      }
+
+      regenerateButton.disabled = false;
     }
-
-    regenerateButton.disabled = false;
-    regenerateButton.textContent = "🔄 আবার";
-
-  });
+  );
 
 
   actions.appendChild(copyButton);
@@ -307,7 +334,7 @@ function loadChat() {
   if (history.length === 0) {
 
     addAIMessage(
-      "হ্যালো 👋 আমি Tuktuki AI।\nআমার সাথে চ্যাট করো!"
+      "হ্যালো 👋 আমি Tuktuki AI\nআমার সাথে চ্যাট করো!"
     );
 
     return;
@@ -327,11 +354,8 @@ function loadChat() {
       addAIMessage(
         item.content
       );
-
     }
-
   });
-
 }
 
 
@@ -343,12 +367,17 @@ clearButton.addEventListener(
   "click",
   () => {
 
-    const ok = confirm(
-      "এই ডিভাইসের চ্যাট হিস্ট্রি মুছে ফেলতে চাও?"
-    );
+    const ok =
+      confirm(
+        "এই ডিভাইসের চ্যাট হিস্ট্রি মুছে ফেলতে চাও?"
+      );
 
     if (!ok) {
       return;
+    }
+
+    if ("speechSynthesis" in window) {
+      speechSynthesis.cancel();
     }
 
     history = [];
@@ -357,12 +386,7 @@ clearButton.addEventListener(
       "tuktuki_history"
     );
 
-    if ("speechSynthesis" in window) {
-      speechSynthesis.cancel();
-    }
-
     loadChat();
-
   }
 );
 
@@ -379,11 +403,16 @@ imageButton.addEventListener(
 );
 
 
+/* =========================
+   IMAGE CHANGE
+========================= */
+
 imageInput.addEventListener(
   "change",
   event => {
 
     const file =
+      event.target.files &&
       event.target.files[0];
 
     if (!file) {
@@ -417,19 +446,42 @@ imageInput.addEventListener(
 
     reader.onload = () => {
 
+      if (
+        typeof reader.result !== "string" ||
+        !reader.result.startsWith("data:image/")
+      ) {
+
+        alert(
+          "ছবির preview তৈরি করা যায়নি।"
+        );
+
+        return;
+      }
+
       selectedImage =
         reader.result;
 
       imagePreview.src =
         selectedImage;
 
-      imagePreviewArea.style.display =
+      imagePreview.alt =
+        "Selected image";
+
+      imagePreview.style.display =
         "block";
 
+      imagePreviewArea.style.display =
+        "block";
+    };
+
+    reader.onerror = () => {
+
+      alert(
+        "ছবি পড়তে সমস্যা হয়েছে। আবার চেষ্টা করো।"
+      );
     };
 
     reader.readAsDataURL(file);
-
   }
 );
 
@@ -444,13 +496,17 @@ removeImage.addEventListener(
 
     selectedImage = null;
 
-    imagePreview.src = "";
+    imagePreview.removeAttribute("src");
+
+    imagePreview.alt = "";
+
+    imagePreview.style.display =
+      "none";
 
     imageInput.value = "";
 
     imagePreviewArea.style.display =
       "none";
-
   }
 );
 
@@ -468,7 +524,6 @@ async function sendMessage() {
     return;
   }
 
-
   if (message) {
 
     addMessage(
@@ -482,9 +537,7 @@ async function sendMessage() {
       "📷 ছবি পাঠানো হয়েছে",
       "user"
     );
-
   }
-
 
   input.value = "";
 
@@ -492,45 +545,39 @@ async function sendMessage() {
   imageButton.disabled = true;
   voiceButton.disabled = true;
 
+  const imageToSend =
+    selectedImage;
 
   const typing =
     addMessage(
-      "Tuktuki AI লিখছে",
+      "Tuktuki AI লিখছে...",
       "ai",
       "typing"
     );
 
-
   try {
 
     const response =
-      await fetch(
-        "/api/chat",
-        {
+      await fetch("/api/chat", {
+        method: "POST",
 
-          method: "POST",
+        headers: {
+          "Content-Type":
+            "application/json"
+        },
 
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
+        body: JSON.stringify({
 
-          body: JSON.stringify({
+          message:
+            message,
 
-            message:
-              message,
+          history:
+            history,
 
-            history:
-              history,
-
-            image:
-              selectedImage
-
-          })
-
-        }
-      );
-
+          image:
+            imageToSend
+        })
+      });
 
     if (!response.ok) {
 
@@ -538,59 +585,47 @@ async function sendMessage() {
         "Server error: " +
         response.status
       );
-
     }
-
 
     const data =
       await response.json();
 
-
     typing.remove();
-
 
     const reply =
       data.reply ||
       "দুঃখিত, কোনো উত্তর পাওয়া যায়নি।";
 
-
     addAIMessage(reply);
-
 
     if (message) {
 
       history.push({
-
         role: "user",
-
         content: message
-
       });
-
     }
 
-
     history.push({
-
       role: "assistant",
-
       content: reply
-
     });
-
 
     saveHistory();
 
-
     selectedImage = null;
 
-    imagePreview.src = "";
+    imagePreview.removeAttribute("src");
+
+    imagePreview.alt = "";
+
+    imagePreview.style.display =
+      "none";
 
     imageInput.value = "";
 
     imagePreviewArea.style.display =
       "none";
-
 
   } catch (error) {
 
@@ -599,24 +634,19 @@ async function sendMessage() {
       error
     );
 
-
     typing.remove();
-
 
     addMessage(
       "দুঃখিত, সংযোগে সমস্যা হয়েছে। আবার চেষ্টা করো।",
       "ai"
     );
-
   }
-
 
   sendButton.disabled = false;
   imageButton.disabled = false;
   voiceButton.disabled = false;
 
   input.focus();
-
 }
 
 
@@ -631,7 +661,7 @@ sendButton.addEventListener(
 
 
 /* =========================
-   ENTER
+   ENTER KEY
 ========================= */
 
 input.addEventListener(
@@ -646,15 +676,13 @@ input.addEventListener(
       event.preventDefault();
 
       sendMessage();
-
     }
-
   }
 );
 
 
 /* =========================
-   DARK / LIGHT MODE
+   DARK / LIGHT
 ========================= */
 
 const savedTheme =
@@ -662,21 +690,20 @@ const savedTheme =
     "tuktuki_theme"
   );
 
-
 if (savedTheme === "dark") {
 
   document.body.classList.add(
     "dark"
   );
 
-  themeToggle.textContent = "☀️";
+  themeToggle.textContent =
+    "☀️";
 
 } else {
 
-  themeToggle.textContent = "🌙";
-
+  themeToggle.textContent =
+    "🌙";
 }
-
 
 themeToggle.addEventListener(
   "click",
@@ -702,7 +729,6 @@ themeToggle.addEventListener(
       isDark
         ? "☀️"
         : "🌙";
-
   }
 );
 
@@ -715,16 +741,19 @@ const SpeechRecognition =
   window.SpeechRecognition ||
   window.webkitSpeechRecognition;
 
-
 if (SpeechRecognition) {
 
   const recognition =
     new SpeechRecognition();
 
-  recognition.lang = "bn-BD";
-  recognition.continuous = false;
-  recognition.interimResults = false;
+  recognition.lang =
+    "bn-BD";
 
+  recognition.continuous =
+    false;
+
+  recognition.interimResults =
+    false;
 
   voiceButton.addEventListener(
     "click",
@@ -737,22 +766,15 @@ if (SpeechRecognition) {
         voiceButton.textContent =
           "🔴";
 
-        voiceButton.classList.add(
-          "listening"
-        );
-
       } catch (error) {
 
         console.log(
           "Voice start:",
           error
         );
-
       }
-
     }
   );
-
 
   recognition.onresult =
     event => {
@@ -760,41 +782,24 @@ if (SpeechRecognition) {
       const text =
         event.results[0][0].transcript;
 
-      input.value += text;
+      input.value +=
+        text;
 
       input.focus();
-
     };
-
 
   recognition.onend =
     () => {
 
       voiceButton.textContent =
         "🎤";
-
-      voiceButton.classList.remove(
-        "listening"
-      );
-
     };
 
-
   recognition.onerror =
-    error => {
-
-      console.log(
-        "Voice error:",
-        error
-      );
+    () => {
 
       voiceButton.textContent =
         "🎤";
-
-      voiceButton.classList.remove(
-        "listening"
-      );
-
     };
 
 } else {
@@ -804,12 +809,10 @@ if (SpeechRecognition) {
     () => {
 
       alert(
-        "এই ব্রাউজারে Voice Input সমর্থিত নয়। Chrome দিয়ে চেষ্টা করো।"
+        "এই ব্রাউজারে Voice Input সমর্থিত নয়।"
       );
-
     }
   );
-
 }
 
 

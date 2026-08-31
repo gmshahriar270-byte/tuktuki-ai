@@ -843,3 +843,6 @@ body.dark #send {
   }
 
 }
+
+/* Hide selected image preview */
+#imagePreviewArea { display: none !important; }

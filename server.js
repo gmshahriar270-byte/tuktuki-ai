@@ -297,13 +297,51 @@ ${message || "ব্যবহারকারী একটি ছবি পাঠ
     } catch (error) {
 
       console.error(
-        "AI Error:",
-        error
+        "========== TUKTUKI AI ERROR =========="
+      );
+      console.error(
+        "Name:",
+        error?.name || "Unknown"
+      );
+      console.error(
+        "Status:",
+        error?.status || error?.statusCode || "Unknown"
+      );
+      console.error(
+        "Message:",
+        error?.message || "Unknown error"
+      );
+      console.error(
+        "======================================"
       );
 
+      let errorMessage =
+        error?.message ||
+        "অজানা API সমস্যা";
+
+      errorMessage = String(errorMessage)
+        .replace(
+          /AIza[0-9A-Za-z_-]{20,}/g,
+          "[API_KEY_HIDDEN]"
+        )
+        .slice(0, 1000);
+
       res.status(500).json({
+        ok: false,
+        error: {
+          name:
+            error?.name || "Error",
+          status:
+            error?.status ||
+            error?.statusCode ||
+            500,
+          message:
+            errorMessage
+        },
         reply:
-          "দুঃখিত, এই মুহূর্তে উত্তর দিতে পারছি না। আবার চেষ্টা করো।"
+          "⚠️ Tuktuki AI Error\n\n" +
+          "কারণ: " +
+          errorMessage
       });
     }
   }

@@ -823,3 +823,145 @@ if (SpeechRecognition) {
 loadChat();
 
 input.focus();
+
+/* =========================================
+   TUKTUKI AI - FEMALE BANGLA VOICE
+========================================= */
+
+(function () {
+
+  if (!("speechSynthesis" in window)) {
+    console.warn("এই browser-এ Text-to-Speech নেই।");
+    return;
+  }
+
+  let voices = [];
+
+  function loadVoices() {
+    voices = speechSynthesis.getVoices();
+  }
+
+  loadVoices();
+
+  speechSynthesis.onvoiceschanged = loadVoices;
+
+  function getFemaleBanglaVoice() {
+
+    const banglaVoices = voices.filter(v =>
+      /^bn(-|_)/i.test(v.lang) ||
+      /bangla|bengali/i.test(v.name)
+    );
+
+    const femaleWords =
+      /female|woman|girl|zira|sabiha|sadia|tania|samantha|google বাংলা|google bengali/i;
+
+    return (
+      banglaVoices.find(v => femaleWords.test(v.name)) ||
+      banglaVoices.find(v => /female|woman|girl/i.test(v.name)) ||
+      banglaVoices[0] ||
+      voices.find(v => /^bn/i.test(v.lang)) ||
+      voices.find(v => /bengali|bangla/i.test(v.name)) ||
+      voices[0]
+    );
+  }
+
+  function speakTuktuki(text, button) {
+
+    if (!text || !text.trim()) return;
+
+    speechSynthesis.cancel();
+
+    const utterance =
+      new SpeechSynthesisUtterance(text);
+
+    const voice = getFemaleBanglaVoice();
+
+    if (voice) {
+      utterance.voice = voice;
+      utterance.lang = voice.lang || "bn-BD";
+    } else {
+      utterance.lang = "bn-BD";
+    }
+
+    utterance.rate = 0.92;
+    utterance.pitch = 1.08;
+    utterance.volume = 1;
+
+    if (button) {
+      button.textContent = "⏹️ বন্ধ";
+
+      utterance.onend = function () {
+        button.textContent = "🔊 শুনুন";
+      };
+
+      utterance.onerror = function () {
+        button.textContent = "🔊 শুনুন";
+      };
+    }
+
+    speechSynthesis.speak(utterance);
+  }
+
+  /* পুরোনো শুনুন button-এর click-ও override করা হবে */
+  document.addEventListener(
+    "click",
+    function (event) {
+
+      const button =
+        event.target.closest("button");
+
+      if (!button) return;
+
+      const buttonText =
+        button.textContent.trim();
+
+      if (
+        buttonText.includes("শুনুন") ||
+        buttonText.includes("বন্ধ")
+      ) {
+
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+
+        if (speechSynthesis.speaking) {
+          speechSynthesis.cancel();
+          button.textContent = "🔊 শুনুন";
+          return;
+        }
+
+        /*
+          AI message bubble থেকে text নেওয়া
+        */
+        const message =
+          button.closest(".message") ||
+          button.parentElement;
+
+        if (!message) return;
+
+        const clone =
+          message.cloneNode(true);
+
+        clone
+          .querySelectorAll("button")
+          .forEach(b => b.remove());
+
+        const text =
+          clone.textContent
+            .replace(/🔊\s*শুনুন/g, "")
+            .replace(/⏹️\s*বন্ধ/g, "")
+            .trim();
+
+        speakTuktuki(text, button);
+      }
+
+    },
+    true
+  );
+
+  console.log(
+    "✅ Tuktuki AI Female Voice চালু হয়েছে"
+  );
+
+})();
+

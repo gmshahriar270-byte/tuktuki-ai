@@ -183,7 +183,16 @@ function addAIMessage(text) {
           /bangla|bengali/i.test(v.name)
         );
 
+      const savedVoiceName =
+        localStorage.getItem("tuktuki_selected_voice");
+
+      const selectedVoice =
+        banglaVoices.find(v =>
+          v.name === savedVoiceName
+        );
+
       const femaleVoice =
+        selectedVoice ||
         banglaVoices.find(v =>
           /female|woman|girl|zira|sabiha|sadia|tania|samantha/i.test(v.name)
         ) ||
